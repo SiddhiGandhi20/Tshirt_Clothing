@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_pymongo import PyMongo
 from config import Config
 from flask_cors import CORS
@@ -23,6 +23,21 @@ mongo = PyMongo(app)
 # Set custom JSON encoder to handle MongoDB ObjectId
 app.json_encoder = JSONEncoder
 
+os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
+
+@app.route('/uploads/hoodies/<filename>')
+def serve_image(filename):
+    return send_from_directory(os.path.join(app.root_path, 'uploads', 'hoodies'), filename)
+
+@app.route('/uploads/combos/<filename>')
+def serve__image(filename):
+    return send_from_directory(os.path.join(app.root_path, 'uploads', 'combos'), filename)
+
+
+@app.route('/uploads/tshirts/<filename>')
+def serve__image_(filename):
+    return send_from_directory(os.path.join(app.root_path, 'uploads', 'tshirts'), filename)
+
 # Register authentication routes (signup)
 auth_bp = create_auth_routes(mongo.db)
 app.register_blueprint(auth_bp, url_prefix="/auth")
@@ -34,10 +49,10 @@ app.register_blueprint(login_bp, url_prefix="/login")  # Fix: changed /auth to /
 # Register product routes
 app.register_blueprint(create_product_routes(mongo.db, app.config['UPLOAD_FOLDER']), url_prefix="/api")
 
-app.register_blueprint(create_tshirts_routes(mongo.db, app.config['UPLOAD_FOLDER']))
+app.register_blueprint(create_tshirts_routes(mongo.db))
 
-app.register_blueprint(create_hoodies_routes(mongo.db, app.config['UPLOAD_FOLDER']))
-app.register_blueprint(create_combos_routes(mongo.db, app.config['UPLOAD_FOLDER']))
+app.register_blueprint(create_hoodies_routes(mongo.db))
+app.register_blueprint(create_combos_routes(mongo.db))
 
 app.register_blueprint(setup_admin_routes(mongo.db))
 

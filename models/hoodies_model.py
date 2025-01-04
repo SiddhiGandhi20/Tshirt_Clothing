@@ -1,61 +1,72 @@
+from pymongo.errors import PyMongoError
 from bson import ObjectId
 
 class HoodieModel:
     def __init__(self, db):
-        self.collection = db.hoodies  # Reference to the 'hoodies' collection in MongoDB
+        self.collection = db["hoodies"]
 
-    def create_hoodie(self, data):
+    def create_item(self, name, price, image_url):
         try:
-            hoodie_data = {
-                "name": data["name"],
-                "price": float(data["price"].replace(",", "")),  # Handle commas in price
-                "image_url": data["image_url"],
+            item = {
+                "name": name,
+                "price": float(price.replace(",", "")),
+                "image_url": image_url
             }
-            result = self.collection.insert_one(hoodie_data)
-            return {"message": "Hoodie created successfully", "hoodie_id": str(result.inserted_id)}, 201
-        except Exception as e:
-            return {"message": "Error creating Hoodie", "error": str(e)}, 500
+            result = self.collection.insert_one(item)
+            return str(result.inserted_id)
+        except PyMongoError as e:
+            print(f"Error creating item: {e}")
+            return None
 
-    def get_product_by_id(self, product_id):
+    def get_all_items(self):
         try:
-            product = self.collection.find_one({"_id": ObjectId(product_id)})
-            if product:
-                product["_id"] = str(product["_id"])
-                return product, 200
-            return {"message": "Product not found"}, 404
-        except Exception as e:
-            return {"message": "Error fetching product", "error": str(e)}, 500
+            items = self.collection.find()
+            return [
+                {
+                    "_id": str(item["_id"]),
+                    "id": str(item["_id"]),
+                    "name": item["name"],
+                    "price": item["price"],
+                    "image_url": item["image_url"]
+                }
+                for item in items
+            ]
+        except PyMongoError as e:
+            print(f"Error retrieving items: {e}")
+            return []
 
-    def get_all_products(self):
+    def get_item_by_id(self, item_id):
         try:
-            products = list(self.collection.find({}, {"name": 1, "price": 1, "image_url": 1}))
-            for product in products:
-                product["_id"] = str(product["_id"])
-            return products, 200
-        except Exception as e:
-            return {"message": "Error fetching products", "error": str(e)}, 500
+            item = self.collection.find_one({"_id": ObjectId(item_id)})
+            if item:
+                return {
+                    "id": str(item["_id"]),
+                    "name": item["name"],
+                    "price": item["price"],
+                    "image_url": item["image_url"]
+                }
+            return None
+        except PyMongoError as e:
+            print(f"Error retrieving item: {e}")
+            return None
 
-    def update_product(self, product_id, data):
+    def update_item(self, item_id, update_data):
         try:
-            update_data = {key: value for key, value in data.items() if value is not None}
             if "price" in update_data:
                 update_data["price"] = float(update_data["price"].replace(",", ""))
 
-            result = self.collection.update_one({"_id": ObjectId(product_id)}, {"$set": update_data})
-            if result.modified_count == 0:
-                return {"message": "Product not found or no changes made"}, 404
+            result = self.collection.update_one(
+                {"_id": ObjectId(item_id)}, {"$set": update_data}
+            )
+            return result.modified_count > 0
+        except PyMongoError as e:
+            print(f"Error updating item: {e}")
+            return False
 
-            updated_product = self.collection.find_one({"_id": ObjectId(product_id)})
-            updated_product["_id"] = str(updated_product["_id"])
-            return updated_product, 200
-        except Exception as e:
-            return {"message": "Error updating product", "error": str(e)}, 500
-
-    def delete_product(self, product_id):
+    def delete_item(self, item_id):
         try:
-            result = self.collection.delete_one({"_id": ObjectId(product_id)})
-            if result.deleted_count == 0:
-                return {"message": "Product not found"}, 404
-            return {"message": "Product deleted successfully"}, 200
-        except Exception as e:
-            return {"message": "Error deleting product", "error": str(e)}, 500
+            result = self.collection.delete_one({"_id": ObjectId(item_id)})
+            return result.deleted_count > 0
+        except PyMongoError as e:
+            print(f"Error deleting item: {e}")
+            return False
