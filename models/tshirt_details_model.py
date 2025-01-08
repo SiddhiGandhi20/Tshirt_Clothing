@@ -8,9 +8,17 @@ class TshirtsDetailsModel:
     # CREATE: Add a new product
     def create_item(self, name, price, image_url, tshirt_id):
         try:
+            # Handle different data types for price
+            if isinstance(price, str):  
+                price = float(price.replace(",", ""))  # Remove commas and convert to float
+            elif isinstance(price, (int, float)):
+                price = float(price)  # Ensure price is a float
+            else:
+                raise ValueError("Invalid price format. Must be a string, int, or float.")
+
             item = {
                 "name": name,
-                "price": float(price.replace(",", "")),
+                "price": price,
                 "image_url": image_url,
                 "tshirt_id": tshirt_id
             }
@@ -20,14 +28,14 @@ class TshirtsDetailsModel:
             print(f"Error creating item: {e}")
             return None
 
+
     # READ: Get all products
     def get_all_items(self):
         try:
             items = self.collection.find()
             return [
                 {
-                    "_id": str(item["_id"]),
-                    "id": str(item["_id"]),
+                    "tshirt_detail_id": str(item["_id"]),
                     "name": item["name"],
                     "price": item["price"],
                     "image_url": item["image_url"],
@@ -45,7 +53,7 @@ class TshirtsDetailsModel:
             item = self.collection.find_one({"_id": ObjectId(item_id)})
             if item:
                 return {
-                    "id": str(item["_id"]),
+                    "tshirt_detail_id": str(item["_id"]),
                     "name": item["name"],
                     "price": item["price"],
                     "image_url": item["image_url"],
@@ -61,7 +69,6 @@ class TshirtsDetailsModel:
         try:
             if "price" in update_data:
                 price = update_data["price"]
-                
                 if isinstance(price, str):  # If it's a string, apply the replace method
                     update_data["price"] = float(price.replace(",", ""))  # Remove commas and convert to float
                 elif isinstance(price, (int, float)):  # If it's already a number (int or float), keep it
