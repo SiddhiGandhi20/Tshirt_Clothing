@@ -12,6 +12,9 @@ from routes.tshirt_routes import create_tshirts_routes
 from routes.hoodies_routes import create_hoodies_routes
 from routes.combos_routes import create_combos_routes
 from routes.admin_login_routes import setup_admin_routes
+from routes.combo_details_routes import create_combos_details_routes
+from routes.hoodies_details_routes import create_hoodies_details_routes
+from routes.tshirt_detail_routes  import create_tshirts_details_routes
 
 
 app = Flask(__name__)
@@ -38,6 +41,19 @@ def serve__image(filename):
 def serve__image_(filename):
     return send_from_directory(os.path.join(app.root_path, 'uploads', 'tshirts'), filename)
 
+
+@app.route('/uploads/combos_details/<filename>')
+def serve_the_image_(filename):
+    return send_from_directory(os.path.join(app.root_path, 'uploads', 'combos_details'), filename)
+
+@app.route('/uploads/hoodies_details/<filename>')
+def serve_a_image_(filename):
+    return send_from_directory(os.path.join(app.root_path, 'uploads', 'hoodies_details'), filename)
+
+@app.route('/uploads/tshirts_details/<filename>')
+def serveimage(filename):
+    return send_from_directory(os.path.join(app.root_path, 'uploads', 'tshirts_details'), filename)
+
 # Register authentication routes (signup)
 auth_bp = create_auth_routes(mongo.db)
 app.register_blueprint(auth_bp, url_prefix="/auth")
@@ -55,6 +71,9 @@ app.register_blueprint(create_hoodies_routes(mongo.db))
 app.register_blueprint(create_combos_routes(mongo.db))
 
 app.register_blueprint(setup_admin_routes(mongo.db))
+app.register_blueprint(create_combos_details_routes(mongo.db), url_prefix='/api')
+app.register_blueprint(create_hoodies_details_routes(mongo.db), url_prefix='/api')
+app.register_blueprint(create_tshirts_details_routes(mongo.db), url_prefix='/api')
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)  # Ensure the port is specified
