@@ -8,9 +8,17 @@ class HoodiesDetailsModel:
     # CREATE: Add a new product
     def create_item(self, name, price, image_url, hoodie_id):
         try:
+            # Handle different data types for price
+            if isinstance(price, str):  
+                price = float(price.replace(",", ""))  # Remove commas and convert to float
+            elif isinstance(price, (int, float)):
+                price = float(price)  # Ensure price is a float
+            else:
+                raise ValueError("Invalid price format. Must be a string, int, or float.")
+
             item = {
                 "name": name,
-                "price": float(price.replace(",", "")),
+                "price": price,
                 "image_url": image_url,
                 "hoodie_id": hoodie_id
             }
@@ -20,14 +28,14 @@ class HoodiesDetailsModel:
             print(f"Error creating item: {e}")
             return None
 
+
     # READ: Get all products
     def get_all_items(self):
         try:
             items = self.collection.find()
             return [
                 {
-                    "_id": str(item["_id"]),
-                    "id": str(item["_id"]),
+                    "hoodie_detail_id": str(item["_id"]),
                     "name": item["name"],
                     "price": item["price"],
                     "image_url": item["image_url"],
@@ -42,10 +50,10 @@ class HoodiesDetailsModel:
     # READ: Get a product by ID
     def get_item_by_id(self, item_id):
         try:
-            item = self.collection.find_one({"_id": ObjectId(item_id)})
+            item = self.collection.find_one({"hoodie_id": str(item_id)})
             if item:
                 return {
-                    "id": str(item["_id"]),
+                    "hoodie_detail_id": str(item["_id"]),
                     "name": item["name"],
                     "price": item["price"],
                     "image_url": item["image_url"],
@@ -61,7 +69,6 @@ class HoodiesDetailsModel:
         try:
             if "price" in update_data:
                 price = update_data["price"]
-                
                 if isinstance(price, str):  # If it's a string, apply the replace method
                     update_data["price"] = float(price.replace(",", ""))  # Remove commas and convert to float
                 elif isinstance(price, (int, float)):  # If it's already a number (int or float), keep it
@@ -88,3 +95,4 @@ class HoodiesDetailsModel:
         except PyMongoError as e:
             print(f"Error deleting item: {e}")
             return False
+

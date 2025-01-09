@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from werkzeug.utils import secure_filename
 import os
 from bson import ObjectId
-from models.hoodies_details_models import HoodiesDetailsModel  # Import hoodieDetailsModel
+from models.hoodies_details_models import HoodiesDetailsModel  
 
 # Constants for file uploads
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../uploads/hoodies_details/')
@@ -38,7 +38,7 @@ def create_hoodies_details_routes(db):
             # Ensure hoodie_id exists in the hoodies collection
             hoodie = db["hoodies"].find_one({"_id": ObjectId(hoodie_id)})
             if not hoodie:
-                return jsonify({"message": "hoodie not found"}), 404
+                return jsonify({"message": "T-shirt not found"}), 404
 
             if not allowed_file(image.filename):
                 return jsonify({"message": "Invalid image file type"}), 400
@@ -52,68 +52,70 @@ def create_hoodies_details_routes(db):
             base_url = request.host_url
             image_url = generate_image_url(filename, base_url)
 
+            # Remove commas from price and convert to float
+            try:
+                price = float(price.replace(",", ""))
+            except ValueError:
+                return jsonify({"message": "Invalid price format"}), 400
+
             # Insert into database
             hoodies_details_model = HoodiesDetailsModel(db)
-            hoodies_details_id = hoodies_details_model.create_item(name, price, image_url, hoodie_id)
+            hoodie_detail_id = hoodies_details_model.create_item(name, price, image_url, hoodie_id)
 
-            if hoodies_details_id:
-                return jsonify({"id": hoodies_details_id, "name": name, "price": price, "image_url": image_url}), 201
+            if hoodie_detail_id:
+                return jsonify({"hoodie_detail_id": hoodie_detail_id, "name": name, "price": price, "image_url": image_url}), 201
             return jsonify({"message": "Error creating hoodies_details"}), 500
         except Exception as e:
             return jsonify({"message": f"Error creating hoodies_details: {str(e)}"}), 500
 
-    # Route: Get all hoodies_detailss
+    # Route: Get all hoodies_details
     @hoodies_details_bp.route("/hoodies_details", methods=["GET"])
-    def get_all_hoodies_detailss():
+    def get_all_hoodies_details():
         try:
             hoodies_details_model = HoodiesDetailsModel(db)
-            hoodies_detailss = hoodies_details_model.get_all_items()
-            return jsonify(hoodies_detailss), 200
+            hoodies_details = hoodies_details_model.get_all_items()
+            return jsonify(hoodies_details), 200
         except Exception as e:
-            return jsonify({"message": f"Error fetching hoodies_detailss: {str(e)}"}), 500
+            return jsonify({"message": f"Error fetching hoodies_details: {str(e)}"}), 500
 
     # Route: Get hoodies_details by ID
-    @hoodies_details_bp.route("/hoodies_details/<id>", methods=["GET"])
-    def get_hoodies_details_by_id(id):
+    @hoodies_details_bp.route("/hoodies_details/<hoodie_detail_id>", methods=["GET"])
+    def get_hoodies_details_by_id(hoodie_detail_id):
         try:
             hoodies_details_model = HoodiesDetailsModel(db)
-            hoodies_details = hoodies_details_model.get_item_by_id(id)
+            hoodies_details = hoodies_details_model.get_item_by_id(hoodie_detail_id)
             if hoodies_details:
                 return jsonify(hoodies_details), 200
-            return jsonify({"message": "hoodies_details not found"}), 404
+            return jsonify({"message": "T-shirts details not found"}), 404
         except Exception as e:
             return jsonify({"message": f"Error fetching hoodies_details: {str(e)}"}), 500
 
     # Route: Update a hoodies_details
-    @hoodies_details_bp.route("/hoodies_details/<id>", methods=["PUT"])
-    def update_hoodies_details(id):
+    @hoodies_details_bp.route("/hoodies_details/<hoodie_detail_id>", methods=["PUT"])
+    def update_hoodies_details(hoodie_detail_id):
         try:
             hoodies_details_model = HoodiesDetailsModel(db)
-            hoodies_details = hoodies_details_model.get_item_by_id(id)
+            hoodies_details = hoodies_details_model.get_item_by_id(hoodie_detail_id)
             if not hoodies_details:
-                return jsonify({"message": "hoodies_details not found"}), 404
+                return jsonify({"message": "T-shirts details not found"}), 404
 
             updated_data = request.form.to_dict()
 
-            # Get hoodie_id from the form data
+            # Get and validate hoodie_id from the form data
             hoodie_id = updated_data.get("hoodie_id")
-
             if hoodie_id:
-                # Ensure hoodie_id exists in the hoodies collection
                 hoodie = db["hoodies"].find_one({"_id": ObjectId(hoodie_id)})
                 if not hoodie:
-                    return jsonify({"message": "hoodie not found"}), 404
+                    return jsonify({"message": "T-shirt not found"}), 404
 
-            # Update price and handle commas if it's a string
+            # Update price and handle commas if present
             if "price" in updated_data:
-                price = updated_data["price"]
-                
-                if isinstance(price, str):  # If it's a string, apply the replace method
-                    updated_data["price"] = float(price.replace(",", ""))  # Remove commas and convert to float
-                elif isinstance(price, (int, float)):  # If it's already a number (int or float), keep it
-                    updated_data["price"] = float(price)  # Convert to float just in case
-                else:
+                try:
+                    updated_data["price"] = float(updated_data["price"].replace(",", ""))
+                except ValueError:
                     return jsonify({"message": "Invalid price format"}), 400
+
+            # Update image if present
             if "image" in request.files:
                 image = request.files["image"]
                 if not allowed_file(image.filename):
@@ -126,26 +128,26 @@ def create_hoodies_details_routes(db):
                 updated_data["image_url"] = generate_image_url(filename, base_url)
 
             # Update in database
-            success = hoodies_details_model.update_item(id, updated_data)
+            success = hoodies_details_model.update_item(hoodie_detail_id, updated_data)
             if success:
-                updated_hoodies_details = hoodies_details_model.get_item_by_id(id)
+                updated_hoodies_details = hoodies_details_model.get_item_by_id(hoodie_detail_id)
                 return jsonify(updated_hoodies_details), 200
             return jsonify({"message": "Error updating hoodies_details"}), 500
         except Exception as e:
             return jsonify({"message": f"Error updating hoodies_details: {str(e)}"}), 500
 
     # Route: Delete a hoodies_details
-    @hoodies_details_bp.route("/hoodies_details/<id>", methods=["DELETE"])
-    def delete_hoodies_details(id):
+    @hoodies_details_bp.route("/hoodies_details/<hoodie_detail_id>", methods=["DELETE"])
+    def delete_hoodies_details(hoodie_detail_id):
         try:
             hoodies_details_model = HoodiesDetailsModel(db)
-            hoodies_details = hoodies_details_model.get_item_by_id(id)
+            hoodies_details = hoodies_details_model.get_item_by_id(hoodie_detail_id)
             if not hoodies_details:
-                return jsonify({"message": "hoodies_details not found"}), 404
+                return jsonify({"message": "T-shirts details not found"}), 404
 
-            success = hoodies_details_model.delete_item(id)
+            success = hoodies_details_model.delete_item(hoodie_detail_id)
             if success:
-                return jsonify({"message": "hoodies_details deleted successfully"}), 200
+                return jsonify({"message": "T-shirts details deleted successfully"}), 200
             return jsonify({"message": "Error deleting hoodies_details"}), 500
         except Exception as e:
             return jsonify({"message": f"Error deleting hoodies_details: {str(e)}"}), 500

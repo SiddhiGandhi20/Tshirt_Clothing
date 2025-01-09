@@ -48,9 +48,9 @@ class TshirtsDetailsModel:
             return []
 
     # READ: Get a product by ID
-    def get_item_by_id(self, tshirt_detail_id):
+    def get_item_by_id(self, item_id):
         try:
-            item = self.collection.find_one({"_id": ObjectId(tshirt_detail_id)})
+            item = self.collection.find_one({"tshirt_id": str(item_id)})
             if item:
                 return {
                     "tshirt_detail_id": str(item["_id"]),
@@ -65,7 +65,7 @@ class TshirtsDetailsModel:
             return None
 
     # UPDATE: Update product details
-    def update_item(self, tshirt_detail_id, update_data):
+    def update_item(self, item_id, update_data):
         try:
             if "price" in update_data:
                 price = update_data["price"]
@@ -77,7 +77,7 @@ class TshirtsDetailsModel:
                     raise ValueError("Invalid price format")
 
             result = self.collection.update_one(
-                {"_id": ObjectId(tshirt_detail_id)}, {"$set": update_data}
+                {"_id": ObjectId(item_id)}, {"$set": update_data}
             )
             return result.modified_count > 0
         except PyMongoError as e:
@@ -88,10 +88,11 @@ class TshirtsDetailsModel:
             return False
 
     # DELETE: Delete a product
-    def delete_item(self, tshirt_detail_id):
+    def delete_item(self, item_id):
         try:
-            result = self.collection.delete_one({"_id": ObjectId(tshirt_detail_id)})
+            result = self.collection.delete_one({"_id": ObjectId(item_id)})
             return result.deleted_count > 0
         except PyMongoError as e:
             print(f"Error deleting item: {e}")
             return False
+
